@@ -46,7 +46,9 @@ class _RootGateState extends ConsumerState<_RootGate> {
   Future<void> _bootstrap() async {
     final done =
         await ref.read(permissionServiceProvider).hasCompletedOnboarding();
-    if (done) {
+    // Skip native permission probes in demo / non-mobile preview environments
+    // (PhotoManager may hang when plugins are unavailable).
+    if (done && !ref.read(useDemoLibraryProvider)) {
       await ref.read(permissionStateProvider.notifier).refresh();
     }
     if (!mounted) return;

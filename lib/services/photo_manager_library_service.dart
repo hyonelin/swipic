@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -74,7 +73,7 @@ class PhotoManagerLibraryService implements MediaLibraryService {
     List<AssetPathEntity> all,
   ) async {
     // Android: infer nesting from relativePath folders.
-    if (!kIsWeb && Platform.isAndroid) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       // photo_manager exposes darwin/android specifics via albumType / name.
       // Folder nesting often appears as "Camera" under "DCIM" style names.
       // We heuristically nest when a path name contains '/' separators.

@@ -157,13 +157,12 @@ class DuplicateService {
   int _hamming(int a, int b) {
     var x = a ^ b;
     var count = 0;
-    while (x != 0) {
-      count += x & 1;
-      // use unsigned-ish shift for 64-bit ints in Dart
-      x = (x >> 1) & 0x7FFFFFFFFFFFFFFF;
-      if (count > 64) break;
+    // Iterate bit positions instead of masking with a 64-bit constant
+    // (keeps web/JS compiles happy with safe integers).
+    for (var i = 0; i < 64 && x != 0; i++) {
+      if ((x & 1) != 0) count++;
+      x >>= 1;
     }
-    // Fallback for negative: bitLength based
     return math.min(count, 64);
   }
 }

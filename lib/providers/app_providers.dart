@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,8 +20,14 @@ final pendingDeleteServiceProvider =
 /// Use demo library on desktop / web where PhotoKit & MediaStore are unavailable.
 final useDemoLibraryProvider = StateProvider<bool>((ref) {
   if (kIsWeb) return true;
-  if (Platform.isIOS || Platform.isAndroid) return false;
-  return true;
+  // Mobile targets only; desktop preview uses the offline demo library.
+  switch (defaultTargetPlatform) {
+    case TargetPlatform.iOS:
+    case TargetPlatform.android:
+      return false;
+    default:
+      return true;
+  }
 });
 
 final mediaLibraryProvider = Provider<MediaLibraryService>((ref) {

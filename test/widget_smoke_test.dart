@@ -12,7 +12,8 @@ void main() {
     await tester.pumpWidget(
       const ProviderScope(child: SwipicApp()),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 800));
     expect(find.text('Swipic'), findsWidgets);
     expect(find.text('继续并授权'), findsOneWidget);
   });
@@ -29,7 +30,9 @@ void main() {
         child: const SwipicApp(),
       ),
     );
-    await tester.pumpAndSettle();
+    // Avoid pumpAndSettle: large-title / implicit animations may keep ticking.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('相册'), findsOneWidget);
     expect(find.text('相似与重复'), findsOneWidget);
     expect(find.text('待删除'), findsOneWidget);
