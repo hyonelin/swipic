@@ -71,17 +71,27 @@ class _PendingDeleteScreenState extends ConsumerState<PendingDeleteScreen> {
 
     setState(() => _deleting = true);
     final ids = items.map((e) => e.id).toList();
-    await ref.read(mediaLibraryProvider).deleteMedia(ids);
-    await ref.read(pendingDeleteIdsProvider.notifier).unmarkMany(ids);
-    ref.invalidate(albumTreeProvider);
-    setState(() => _deleting = false);
+    var deleted = false;
+    try {
+      deleted = await ref.read(mediaLibraryProvider).deleteMedia(ids);
+      if (deleted) {
+        await ref.read(pendingDeleteIdsProvider.notifier).unmarkMany(ids);
+        ref.invalidate(albumTreeProvider);
+      }
+    } finally {
+      if (mounted) setState(() => _deleting = false);
+    }
     await _reload();
     if (!mounted) return;
     await showCupertinoDialog<void>(
       context: context,
       builder: (context) => CupertinoAlertDialog(
-        title: const Text('已删除'),
-        content: Text('已删除 ${ids.length} 项'),
+        title: Text(deleted ? '已删除' : '删除失败'),
+        content: Text(
+          deleted
+              ? '已删除 ${ids.length} 项'
+              : '系统相册没有确认删除这些项目，已保留在待删除列表中。',
+        ),
         actions: [
           CupertinoDialogAction(
             onPressed: () => Navigator.pop(context),

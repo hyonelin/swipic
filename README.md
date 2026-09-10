@@ -37,6 +37,10 @@ flutter run -d linux
 
 真机上请在「设置」关闭演示模式，以访问系统相册。
 
+## 打包
+
+Android 与 iOS 自签名安装说明见 [`docs/BUILDING.md`](docs/BUILDING.md)。
+
 ## 盈利建议（与离线定位兼容）
 
 | 方案 | 是否需要应用联网 | 建议 |
