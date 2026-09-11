@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'providers/app_providers.dart';
@@ -15,11 +16,24 @@ class SwipicApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Swipic',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.material,
+      theme: AppTheme.materialLight,
+      darkTheme: AppTheme.materialDark,
+      themeMode: ThemeMode.system,
       builder: (context, child) {
+        final brightness = MediaQuery.platformBrightnessOf(context);
+        final dark = brightness == Brightness.dark;
         return CupertinoTheme(
-          data: AppTheme.cupertino,
-          child: child ?? const SizedBox.shrink(),
+          data: AppTheme.cupertino(brightness),
+          child: AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle(
+              statusBarBrightness: dark ? Brightness.dark : Brightness.light,
+              statusBarIconBrightness: dark
+                  ? Brightness.light
+                  : Brightness.dark,
+              statusBarColor: const Color(0x00000000),
+            ),
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
       home: const _RootGate(),
@@ -44,8 +58,9 @@ class _RootGateState extends ConsumerState<_RootGate> {
   }
 
   Future<void> _bootstrap() async {
-    final done =
-        await ref.read(permissionServiceProvider).hasCompletedOnboarding();
+    final done = await ref
+        .read(permissionServiceProvider)
+        .hasCompletedOnboarding();
     // Skip native permission probes in demo / non-mobile preview environments
     // (PhotoManager may hang when plugins are unavailable).
     if (done && !ref.read(useDemoLibraryProvider)) {

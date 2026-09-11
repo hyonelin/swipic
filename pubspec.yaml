@@ -1,7 +1,7 @@
 name: swipic
 description: "Offline swipe photo cleaner for iOS and Android"
 publish_to: 'none'
-version: 1.0.3+4
+version: 1.0.4+5
 
 environment:
   sdk: ^3.12.2
@@ -22,6 +22,7 @@ dependencies:
   crypto: ^3.0.6
   image: ^4.5.4
   intl: ^0.20.2
+  package_info_plus: ^10.2.1
 
 dev_dependencies:
   flutter_test:

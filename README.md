@@ -12,6 +12,7 @@
 6. **实况与视频**：识别 Live Photo 与视频，并在卡片上展示标识。
 7. **隐私**：Release 构建不声明 `INTERNET` 权限；分析均在本地完成。
 8. **首次启动授权**：一次性请求照片 / 视频 / 媒体位置等权限。
+9. **深色模式**：跟随 Android / iOS 系统外观自动切换。
 
 ## 技术栈
 
@@ -37,6 +38,8 @@ flutter run -d linux
 
 真机上请在「设置」关闭演示模式，以访问系统相册。
 
+演示图库的照片、视频、相册和重复项可手动调整，说明见 [`docs/DEMO_LIBRARY.md`](docs/DEMO_LIBRARY.md)。
+
 ## 打包
 
 Android 与 iOS 自签名安装说明见 [`docs/BUILDING.md`](docs/BUILDING.md)。
@@ -58,7 +61,7 @@ lib/
   providers/    Riverpod 状态
   screens/      引导、首页、相册、滑动、待删除、查重、详情、设置
   widgets/      滑动卡片、缩略图、缩放查看等
-  theme/        iOS 风格浅色主题
+  theme/        iOS 风格浅色 / 深色主题
 ```
 
 ## 权限说明

@@ -19,8 +19,8 @@ class IosGroup extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
             child: Text(
               header!.toUpperCase(),
-              style: const TextStyle(
-                color: AppColors.secondaryLabel,
+              style: TextStyle(
+                color: AppColors.resolve(context, AppColors.secondaryLabel),
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 letterSpacing: 0.2,
@@ -31,7 +31,7 @@ class IosGroup extends StatelessWidget {
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.resolve(context, AppColors.surface),
             borderRadius: BorderRadius.circular(14),
           ),
           clipBehavior: Clip.antiAlias,
@@ -40,10 +40,10 @@ class IosGroup extends StatelessWidget {
               for (var i = 0; i < children.length; i++) ...[
                 children[i],
                 if (i != children.length - 1)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(left: 54),
                     child: ColoredBox(
-                      color: AppColors.separator,
+                      color: AppColors.resolve(context, AppColors.separator),
                       child: SizedBox(height: 0.5, width: double.infinity),
                     ),
                   ),
@@ -56,8 +56,8 @@ class IosGroup extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             child: Text(
               footer!,
-              style: const TextStyle(
-                color: AppColors.secondaryLabel,
+              style: TextStyle(
+                color: AppColors.resolve(context, AppColors.secondaryLabel),
                 fontSize: 13,
               ),
             ),
@@ -94,18 +94,15 @@ class IosListTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
-            if (leading != null) ...[
-              leading!,
-              const SizedBox(width: 12),
-            ],
+            if (leading != null) ...[leading!, const SizedBox(width: 12)],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: AppColors.label,
+                    style: TextStyle(
+                      color: AppColors.resolve(context, AppColors.label),
                       fontSize: 17,
                     ),
                   ),
@@ -113,8 +110,11 @@ class IosListTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle!,
-                      style: const TextStyle(
-                        color: AppColors.secondaryLabel,
+                      style: TextStyle(
+                        color: AppColors.resolve(
+                          context,
+                          AppColors.secondaryLabel,
+                        ),
                         fontSize: 13,
                       ),
                     ),
@@ -124,12 +124,12 @@ class IosListTile extends StatelessWidget {
             ),
             ?trailing,
             if (showChevron && onTap != null)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(left: 6),
                 child: Icon(
                   CupertinoIcons.chevron_forward,
                   size: 18,
-                  color: AppColors.tertiaryLabel,
+                  color: AppColors.resolve(context, AppColors.tertiaryLabel),
                 ),
               ),
           ],
@@ -140,11 +140,7 @@ class IosListTile extends StatelessWidget {
 }
 
 class IosIconBubble extends StatelessWidget {
-  const IosIconBubble({
-    super.key,
-    required this.icon,
-    required this.color,
-  });
+  const IosIconBubble({super.key, required this.icon, required this.color});
 
   final IconData icon;
   final Color color;

@@ -29,9 +29,7 @@ class HomeScreen extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
               child: _HeroBanner(
-                subtitle: demo
-                    ? '当前为演示图库，可完整体验滑动与查重流程'
-                    : '选择相册，左右滑动清理',
+                subtitle: demo ? '当前为演示图库，可完整体验滑动与查重流程' : '选择相册，左右滑动清理',
               ),
             ),
           ),
@@ -75,7 +73,9 @@ class HomeScreen extends ConsumerWidget {
                 IosListTile(
                   leading: IosIconBubble(
                     icon: CupertinoIcons.trash,
-                    color: pending.isEmpty ? AppColors.secondaryLabel : AppColors.delete,
+                    color: pending.isEmpty
+                        ? AppColors.secondaryLabel
+                        : AppColors.delete,
                   ),
                   title: '待删除',
                   subtitle: pending.isEmpty
@@ -154,35 +154,53 @@ class _HeroBanner extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(22, 26, 22, 24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFFE8F1FF),
-            Color(0xFFF7F7FA),
-            Color(0xFFEAF8F0),
+            AppColors.resolve(
+              context,
+              const CupertinoDynamicColor.withBrightness(
+                color: Color(0xFFE8F1FF),
+                darkColor: Color(0xFF102033),
+              ),
+            ),
+            AppColors.resolve(
+              context,
+              const CupertinoDynamicColor.withBrightness(
+                color: Color(0xFFF7F7FA),
+                darkColor: Color(0xFF17171A),
+              ),
+            ),
+            AppColors.resolve(
+              context,
+              const CupertinoDynamicColor.withBrightness(
+                color: Color(0xFFEAF8F0),
+                darkColor: Color(0xFF10251A),
+              ),
+            ),
           ],
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '轻扫整理',
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.6,
-              color: AppColors.label,
+              color: AppColors.resolve(context, AppColors.label),
             ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               height: 1.35,
-              color: AppColors.secondaryLabel,
+              color: AppColors.resolve(context, AppColors.secondaryLabel),
             ),
           ),
           const SizedBox(height: 18),
