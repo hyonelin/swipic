@@ -306,7 +306,7 @@ class PhotoManagerLibraryService implements MediaLibraryService {
     if (entity == null) return null;
     return AssetEntityImageProvider(
       entity,
-      isOriginal: item.isImage && thumbSize >= 1600,
+      isOriginal: false,
       thumbnailSize: ThumbnailSize(thumbSize, thumbSize),
     );
   }

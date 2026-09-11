@@ -1,12 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:video_player/video_player.dart';
 
 import '../models/media_item.dart';
 import '../providers/app_providers.dart';
 import '../theme/app_theme.dart';
 import 'video_controller_factory.dart';
-import 'package:video_player/video_player.dart';
 
 class ZoomableMedia extends ConsumerStatefulWidget {
   const ZoomableMedia({super.key, required this.item});
@@ -92,7 +92,7 @@ class _ZoomableMediaState extends ConsumerState<ZoomableMedia>
   @override
   Widget build(BuildContext context) {
     final library = ref.watch(mediaLibraryProvider);
-    final provider = library.imageProvider(widget.item, thumbSize: 2000);
+    final provider = library.imageProvider(widget.item, thumbSize: 1200);
     final video = _video;
 
     return GestureDetector(

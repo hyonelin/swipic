@@ -9,11 +9,18 @@ import '../../widgets/swipe_card.dart';
 import '../detail/media_detail_screen.dart';
 import '../pending/pending_delete_screen.dart';
 
-class SwipeCleanupScreen extends ConsumerWidget {
+class SwipeCleanupScreen extends ConsumerStatefulWidget {
   const SwipeCleanupScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SwipeCleanupScreen> createState() => _SwipeCleanupScreenState();
+}
+
+class _SwipeCleanupScreenState extends ConsumerState<SwipeCleanupScreen> {
+  String? _lastPrefetchKey;
+
+  @override
+  Widget build(BuildContext context) {
     final session = ref.watch(cleanupSessionProvider);
     final pendingCount = ref.watch(pendingDeleteIdsProvider).length;
 
@@ -23,6 +30,8 @@ class SwipeCleanupScreen extends ConsumerWidget {
         child: Center(child: Text('没有清理会话')),
       );
     }
+
+    _scheduleThumbnailPrefetch(session);
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
@@ -76,8 +85,8 @@ class SwipeCleanupScreen extends ConsumerWidget {
                           onPressed: session.history.isEmpty
                               ? null
                               : () => ref
-                                  .read(cleanupSessionProvider.notifier)
-                                  .undo(),
+                                    .read(cleanupSessionProvider.notifier)
+                                    .undo(),
                           child: const Text('撤销'),
                         ),
                       ],
@@ -90,7 +99,9 @@ class SwipeCleanupScreen extends ConsumerWidget {
                         key: ValueKey(session.current!.id),
                         item: session.current!,
                         onDecision: (keep) {
-                          ref.read(cleanupSessionProvider.notifier).decide(
+                          ref
+                              .read(cleanupSessionProvider.notifier)
+                              .decide(
                                 keep
                                     ? SwipeDecision.keep
                                     : SwipeDecision.delete,
@@ -155,6 +166,27 @@ class SwipeCleanupScreen extends ConsumerWidget {
       ),
     );
   }
+
+  void _scheduleThumbnailPrefetch(CleanupSession session) {
+    final current = session.current;
+    if (current == null) return;
+
+    final key = '${session.albumId}:${session.index}';
+    if (_lastPrefetchKey == key) return;
+    _lastPrefetchKey = key;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final library = ref.read(mediaLibraryProvider);
+      final end = (session.index + 4).clamp(0, session.items.length);
+      for (final item in session.items.sublist(session.index, end)) {
+        final provider = library.imageProvider(item, thumbSize: 960);
+        if (provider != null) {
+          precacheImage(provider, context);
+        }
+      }
+    });
+  }
 }
 
 class _RoundAction extends StatelessWidget {
@@ -190,7 +222,11 @@ class _RoundAction extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: color,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
@@ -217,7 +253,11 @@ class _FinishedView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(CupertinoIcons.checkmark_seal, size: 64, color: AppColors.keep),
+          const Icon(
+            CupertinoIcons.checkmark_seal,
+            size: 64,
+            color: AppColors.keep,
+          ),
           const SizedBox(height: 18),
           const Text(
             '本轮清理完成',
@@ -226,7 +266,10 @@ class _FinishedView extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             '保留 $kept · 标记删除 $deleted',
-            style: const TextStyle(color: AppColors.secondaryLabel, fontSize: 16),
+            style: const TextStyle(
+              color: AppColors.secondaryLabel,
+              fontSize: 16,
+            ),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -245,10 +288,7 @@ class _FinishedView extends StatelessWidget {
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
-            child: CupertinoButton(
-              onPressed: onDone,
-              child: const Text('返回'),
-            ),
+            child: CupertinoButton(onPressed: onDone, child: const Text('返回')),
           ),
         ],
       ),

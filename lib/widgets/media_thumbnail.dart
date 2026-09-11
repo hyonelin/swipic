@@ -25,7 +25,7 @@ class MediaThumbnail extends ConsumerWidget {
     final library = ref.watch(mediaLibraryProvider);
     final provider = library.imageProvider(
       item,
-      thumbSize: highQuality ? 1600 : 480,
+      thumbSize: highQuality ? 960 : 320,
     );
 
     return Stack(
@@ -35,7 +35,10 @@ class MediaThumbnail extends ConsumerWidget {
           color: AppColors.surfaceSecondary,
           child: provider == null
               ? const Center(
-                  child: Icon(CupertinoIcons.photo, color: AppColors.tertiaryLabel),
+                  child: Icon(
+                    CupertinoIcons.photo,
+                    color: AppColors.tertiaryLabel,
+                  ),
                 )
               : Image(
                   image: provider,
