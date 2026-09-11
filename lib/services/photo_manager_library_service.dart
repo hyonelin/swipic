@@ -82,9 +82,9 @@ class PhotoManagerLibraryService implements MediaLibraryService {
         if (parts.length > 1) {
           final parentName = parts.sublist(0, parts.length - 1).join('/');
           final parent = all.cast<AssetPathEntity?>().firstWhere(
-                (p) => p?.name == parentName,
-                orElse: () => null,
-              );
+            (p) => p?.name == parentName,
+            orElse: () => null,
+          );
           return parent?.id;
         }
       }
@@ -98,9 +98,9 @@ class PhotoManagerLibraryService implements MediaLibraryService {
       if (parts.length > 1) {
         final parentName = parts.sublist(0, parts.length - 1).join(separator);
         final parent = all.cast<AssetPathEntity?>().firstWhere(
-              (p) => p?.name == parentName,
-              orElse: () => null,
-            );
+          (p) => p?.name == parentName,
+          orElse: () => null,
+        );
         return parent?.id;
       }
     }
@@ -118,19 +118,21 @@ class PhotoManagerLibraryService implements MediaLibraryService {
       hasAll: true,
     );
     final path = paths.cast<AssetPathEntity?>().firstWhere(
-          (p) => p?.id == albumId,
-          orElse: () => null,
-        );
+      (p) => p?.id == albumId,
+      orElse: () => null,
+    );
     if (path == null) return [];
 
     final total = await path.assetCountAsync;
     final entities = <AssetEntity>[];
     const pageSize = 80;
     for (var i = 0; i < total; i += pageSize) {
-      entities.addAll(await path.getAssetListRange(
-        start: i,
-        end: (i + pageSize).clamp(0, total),
-      ));
+      entities.addAll(
+        await path.getAssetListRange(
+          start: i,
+          end: (i + pageSize).clamp(0, total),
+        ),
+      );
     }
 
     // If recursive, also pull media from nested child albums.
@@ -158,10 +160,12 @@ class PhotoManagerLibraryService implements MediaLibraryService {
           if (nestedPath == null) continue;
           final nestedCount = await nestedPath.assetCountAsync;
           for (var i = 0; i < nestedCount; i += pageSize) {
-            entities.addAll(await nestedPath.getAssetListRange(
-              start: i,
-              end: (i + pageSize).clamp(0, nestedCount),
-            ));
+            entities.addAll(
+              await nestedPath.getAssetListRange(
+                start: i,
+                end: (i + pageSize).clamp(0, nestedCount),
+              ),
+            );
           }
         }
       }
@@ -172,20 +176,46 @@ class PhotoManagerLibraryService implements MediaLibraryService {
     for (final entity in entities) {
       if (!seen.add(entity.id)) continue;
       _assetCache[entity.id] = entity;
-      items.add(await _toMediaItem(entity, path));
+      items.add(
+        await _toMediaItem(entity, albumId: path.id, albumName: path.name),
+      );
     }
     items.sort((a, b) => b.createDate.compareTo(a.createDate));
     return items;
   }
 
-  Future<MediaItem> _toMediaItem(AssetEntity entity, AssetPathEntity path) async {
+  @override
+  Future<List<MediaItem>> resolveMediaByIds(Iterable<String> ids) async {
+    final items = <MediaItem>[];
+    for (final id in ids) {
+      final entity = await _entity(id);
+      if (entity == null) continue;
+      items.add(
+        await _toMediaItem(
+          entity,
+          albumId: entity.relativePath ?? '',
+          albumName: entity.relativePath?.isNotEmpty == true
+              ? entity.relativePath!
+              : '系统相册',
+        ),
+      );
+    }
+    items.sort((a, b) => b.createDate.compareTo(a.createDate));
+    return items;
+  }
+
+  Future<MediaItem> _toMediaItem(
+    AssetEntity entity, {
+    required String albumId,
+    required String albumName,
+  }) async {
     final fileSize = await entity.fileSize;
     final latlng = await entity.latlngAsync();
     final kind = _kindOf(entity);
     return MediaItem(
       id: entity.id,
-      albumId: path.id,
-      albumName: path.name,
+      albumId: albumId,
+      albumName: albumName,
       kind: kind,
       createDate: entity.createDateTime,
       width: entity.width,
@@ -242,15 +272,20 @@ class PhotoManagerLibraryService implements MediaLibraryService {
   }
 
   @override
+  Future<String?> loadPlayableVideoPath(String id) async {
+    final entity = await _entity(id);
+    if (entity == null || entity.type != AssetType.video) return null;
+    final file = await entity.file;
+    return file?.path;
+  }
+
+  @override
   Future<ui.Image?> loadUiImage(String id, {int? maxSize}) async {
     final bytes = maxSize == null
         ? await loadOriginBytes(id)
         : await loadThumbnail(id, size: maxSize);
     if (bytes == null) return null;
-    final codec = await ui.instantiateImageCodec(
-      bytes,
-      targetWidth: maxSize,
-    );
+    final codec = await ui.instantiateImageCodec(bytes, targetWidth: maxSize);
     final frame = await codec.getNextFrame();
     return frame.image;
   }

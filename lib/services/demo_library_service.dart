@@ -193,12 +193,18 @@ class DemoLibraryService implements MediaLibraryService {
     final bytes = cloneFrom != null && _bytes.containsKey(cloneFrom)
         ? Uint8List.fromList(_bytes[cloneFrom]!)
         : similarTo != null && _bytes.containsKey(similarTo)
-            ? Uint8List.fromList(_bytes[similarTo]!)
-            : _generateJpeg(w: 480, h: ((480 * h) / w).round(), hue: hue, seed: id.hashCode);
+        ? Uint8List.fromList(_bytes[similarTo]!)
+        : _generateJpeg(
+            w: 480,
+            h: ((480 * h) / w).round(),
+            hue: hue,
+            seed: id.hashCode,
+          );
 
     _bytes[id] = bytes;
-    final byteSize = (bytes.length * sizeFactor * (kind == MediaKind.video ? 12 : 1))
-        .round();
+    final byteSize =
+        (bytes.length * sizeFactor * (kind == MediaKind.video ? 12 : 1))
+            .round();
 
     return MediaItem(
       id: id,
@@ -240,9 +246,15 @@ class DemoLibraryService implements MediaLibraryService {
       for (var x = 0; x < w; x++) {
         final t = (x + y) / (w + h);
         final noise = rnd.nextDouble() * 18;
-        final r = (base.r * (1 - t) + accent.r * t + noise).clamp(0, 255).toInt();
-        final g = (base.g * (1 - t) + accent.g * t + noise).clamp(0, 255).toInt();
-        final b = (base.b * (1 - t) + accent.b * t + noise).clamp(0, 255).toInt();
+        final r = (base.r * (1 - t) + accent.r * t + noise)
+            .clamp(0, 255)
+            .toInt();
+        final g = (base.g * (1 - t) + accent.g * t + noise)
+            .clamp(0, 255)
+            .toInt();
+        final b = (base.b * (1 - t) + accent.b * t + noise)
+            .clamp(0, 255)
+            .toInt();
         image.setPixelRgb(x, y, r, g, b);
       }
     }
@@ -304,9 +316,7 @@ class DemoLibraryService implements MediaLibraryService {
 
     if (albumId != 'album_all') {
       final node = _findNode(albumId);
-      final ids = recursive && node != null
-          ? node.collectIds()
-          : {albumId};
+      final ids = recursive && node != null ? node.collectIds() : {albumId};
       all = all.where((m) => ids.contains(m.albumId));
     }
 
@@ -324,6 +334,13 @@ class DemoLibraryService implements MediaLibraryService {
     final list = all.toList()
       ..sort((a, b) => b.createDate.compareTo(a.createDate));
     return list;
+  }
+
+  @override
+  Future<List<MediaItem>> resolveMediaByIds(Iterable<String> ids) async {
+    final resolved = ids.map((id) => _items[id]).whereType<MediaItem>().toList()
+      ..sort((a, b) => b.createDate.compareTo(a.createDate));
+    return resolved;
   }
 
   AlbumNode? _findNode(String id) {
@@ -353,6 +370,9 @@ class DemoLibraryService implements MediaLibraryService {
   Future<Uint8List?> loadOriginBytes(String id) async => _bytes[id];
 
   @override
+  Future<String?> loadPlayableVideoPath(String id) async => null;
+
+  @override
   Future<ui.Image?> loadUiImage(String id, {int? maxSize}) async {
     final bytes = await loadThumbnail(id, size: maxSize ?? 1200);
     if (bytes == null) return null;
@@ -376,9 +396,7 @@ class DemoLibraryService implements MediaLibraryService {
 
       AlbumNode refresh(AlbumNode node) {
         return node.copyWith(
-          assetCount: node.isAll
-              ? _items.length
-              : countFor(node),
+          assetCount: node.isAll ? _items.length : countFor(node),
           children: node.children.map(refresh).toList(),
         );
       }

@@ -17,9 +17,13 @@ abstract class MediaLibraryService {
     RequestFilter filter = RequestFilter.all,
   });
 
+  Future<List<MediaItem>> resolveMediaByIds(Iterable<String> ids);
+
   Future<Uint8List?> loadThumbnail(String id, {int size = 400});
 
   Future<Uint8List?> loadOriginBytes(String id);
+
+  Future<String?> loadPlayableVideoPath(String id);
 
   Future<ui.Image?> loadUiImage(String id, {int? maxSize});
 
@@ -44,11 +48,7 @@ extension MediaLibraryServiceX on MediaLibraryService {
     allNode ??= tree.isEmpty ? null : tree.first;
 
     if (allNode != null && allNode.isAll) {
-      return loadMedia(
-        albumId: allNode.id,
-        recursive: false,
-        filter: filter,
-      );
+      return loadMedia(albumId: allNode.id, recursive: false, filter: filter);
     }
 
     final seen = <String>{};
