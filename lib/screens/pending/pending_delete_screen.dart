@@ -17,8 +17,10 @@ class PendingDeleteScreen extends ConsumerStatefulWidget {
 
 class _PendingDeleteScreenState extends ConsumerState<PendingDeleteScreen> {
   List<MediaItem>? _items;
+  final Set<String> _selectedIds = {};
   bool _loading = true;
   bool _deleting = false;
+  bool _selectionMode = false;
 
   @override
   void initState() {
@@ -35,13 +37,28 @@ class _PendingDeleteScreenState extends ConsumerState<PendingDeleteScreen> {
     if (!mounted) return;
     setState(() {
       _items = resolved;
+      _selectedIds.removeWhere((id) => !resolved.any((item) => item.id == id));
       _loading = false;
     });
   }
 
-  Future<void> _confirmDelete() async {
-    final items = _items;
-    if (items == null || items.isEmpty) return;
+  Future<void> _restoreIds(Set<String> ids) async {
+    if (ids.isEmpty) return;
+    await ref.read(pendingDeleteIdsProvider.notifier).unmarkMany(ids);
+    if (!mounted) return;
+    setState(() {
+      _selectedIds.removeAll(ids);
+      _items = [
+        for (final item in _items ?? const <MediaItem>[])
+          if (!ids.contains(item.id)) item,
+      ];
+      if (_selectedIds.isEmpty) _selectionMode = false;
+    });
+  }
+
+  Future<void> _confirmDelete([List<MediaItem>? targetItems]) async {
+    final items = targetItems ?? _items;
+    if (items == null || items.isEmpty || _deleting) return;
 
     final ok = await showCupertinoDialog<bool>(
       context: context,
@@ -70,6 +87,8 @@ class _PendingDeleteScreenState extends ConsumerState<PendingDeleteScreen> {
       deleted = await ref.read(mediaLibraryProvider).deleteMedia(ids);
       if (deleted) {
         await ref.read(pendingDeleteIdsProvider.notifier).unmarkMany(ids);
+        _selectedIds.removeAll(ids);
+        if (_selectedIds.isEmpty) _selectionMode = false;
         ref.invalidate(albumTreeProvider);
       }
     } finally {
@@ -97,20 +116,30 @@ class _PendingDeleteScreenState extends ConsumerState<PendingDeleteScreen> {
   @override
   Widget build(BuildContext context) {
     final items = _items ?? const <MediaItem>[];
+    final selectedItems = items
+        .where((item) => _selectedIds.contains(item.id))
+        .toList(growable: false);
     final bytes = items.fold<int>(0, (sum, e) => sum + e.byteSize);
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: const Text('待删除'),
+        middle: Text(_selectionMode ? '已选择 ${_selectedIds.length} 项' : '待删除'),
         previousPageTitle: '返回',
         trailing: items.isEmpty
             ? null
             : CupertinoButton(
                 padding: EdgeInsets.zero,
-                onPressed: _deleting ? null : _confirmDelete,
+                onPressed: _deleting
+                    ? null
+                    : () {
+                        setState(() {
+                          _selectionMode = !_selectionMode;
+                          if (!_selectionMode) _selectedIds.clear();
+                        });
+                      },
                 child: Text(
-                  _deleting ? '删除中…' : '确认删除',
-                  style: const TextStyle(color: AppColors.delete),
+                  _selectionMode ? '取消' : '选择',
+                  style: const TextStyle(fontSize: 15),
                 ),
               ),
       ),
@@ -140,17 +169,43 @@ class _PendingDeleteScreenState extends ConsumerState<PendingDeleteScreen> {
                       CupertinoButton(
                         padding: EdgeInsets.zero,
                         onPressed: () async {
-                          await ref
-                              .read(pendingDeleteIdsProvider.notifier)
-                              .clear();
-                          if (!context.mounted) return;
-                          setState(() => _items = []);
+                          if (_selectionMode) {
+                            setState(() {
+                              if (_selectedIds.length == items.length) {
+                                _selectedIds.clear();
+                              } else {
+                                _selectedIds
+                                  ..clear()
+                                  ..addAll(items.map((item) => item.id));
+                              }
+                            });
+                          } else {
+                            await _restoreIds(items.map((e) => e.id).toSet());
+                          }
                         },
-                        child: const Text(
-                          '全部恢复',
-                          style: TextStyle(fontSize: 15),
+                        child: Text(
+                          _selectionMode
+                              ? _selectedIds.length == items.length
+                                    ? '清空选择'
+                                    : '全选'
+                              : '全部恢复',
+                          style: const TextStyle(fontSize: 15),
                         ),
                       ),
+                      if (!_selectionMode) ...[
+                        const SizedBox(width: 12),
+                        CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: _deleting ? null : () => _confirmDelete(),
+                          child: Text(
+                            _deleting ? '删除中…' : '全部删除',
+                            style: const TextStyle(
+                              color: AppColors.delete,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -166,24 +221,34 @@ class _PendingDeleteScreenState extends ConsumerState<PendingDeleteScreen> {
                     itemCount: items.length,
                     itemBuilder: (context, index) {
                       final item = items[index];
+                      final selected = _selectedIds.contains(item.id);
                       return GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(
+                        onTap: () async {
+                          if (_selectionMode) {
+                            setState(() {
+                              if (selected) {
+                                _selectedIds.remove(item.id);
+                              } else {
+                                _selectedIds.add(item.id);
+                              }
+                            });
+                            return;
+                          }
+                          await Navigator.of(context).push(
                             CupertinoPageRoute(
                               builder: (_) => MediaDetailScreen(item: item),
                             ),
                           );
+                          if (context.mounted) await _reload();
                         },
-                        onLongPress: () async {
-                          await ref
-                              .read(pendingDeleteIdsProvider.notifier)
-                              .unmark(item.id);
-                          if (!context.mounted) return;
+                        onLongPress: () {
                           setState(() {
-                            _items = [
-                              for (final current in items)
-                                if (current.id != item.id) current,
-                            ];
+                            _selectionMode = true;
+                            if (selected) {
+                              _selectedIds.remove(item.id);
+                            } else {
+                              _selectedIds.add(item.id);
+                            }
                           });
                         },
                         child: ClipRRect(
@@ -192,17 +257,36 @@ class _PendingDeleteScreenState extends ConsumerState<PendingDeleteScreen> {
                             fit: StackFit.expand,
                             children: [
                               MediaThumbnail(item: item),
+                              if (selected)
+                                Positioned.fill(
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: CupertinoColors.black.withValues(
+                                        alpha: 0.42,
+                                      ),
+                                      border: Border.all(
+                                        color: AppColors.keep,
+                                        width: 3,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
                               Positioned(
                                 top: 6,
                                 right: 6,
                                 child: Container(
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.delete,
+                                  decoration: BoxDecoration(
+                                    color: selected
+                                        ? AppColors.keep
+                                        : AppColors.delete,
                                     shape: BoxShape.circle,
                                   ),
                                   padding: const EdgeInsets.all(4),
-                                  child: const Icon(
-                                    CupertinoIcons.xmark,
+                                  child: Icon(
+                                    selected
+                                        ? CupertinoIcons.checkmark
+                                        : CupertinoIcons.xmark,
                                     size: 10,
                                     color: CupertinoColors.white,
                                   ),
@@ -215,6 +299,58 @@ class _PendingDeleteScreenState extends ConsumerState<PendingDeleteScreen> {
                     },
                   ),
                 ),
+                if (_selectionMode)
+                  SafeArea(
+                    top: false,
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                      decoration: const BoxDecoration(
+                        color: AppColors.surface,
+                        border: Border(
+                          top: BorderSide(color: AppColors.separator),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: CupertinoButton(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              color: AppColors.keep,
+                              borderRadius: BorderRadius.circular(12),
+                              onPressed: _selectedIds.isEmpty
+                                  ? null
+                                  : () => _restoreIds(Set.of(_selectedIds)),
+                              child: const Text(
+                                '恢复所选',
+                                style: TextStyle(
+                                  color: CupertinoColors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: CupertinoButton(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              color: AppColors.delete,
+                              borderRadius: BorderRadius.circular(12),
+                              onPressed: _deleting || _selectedIds.isEmpty
+                                  ? null
+                                  : () => _confirmDelete(selectedItems),
+                              child: Text(
+                                _deleting ? '删除中…' : '删除所选',
+                                style: const TextStyle(
+                                  color: CupertinoColors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
     );
